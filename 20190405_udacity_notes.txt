@@ -1,0 +1,145 @@
+state procedure:
+
+Project until 23rd of April
+
+
+2. Introduction localization
+
+	init -> sense <-> move
+
+	"motion model"
+	move: 
+		for each cell:
+			calc probability where robot is next
+			sum over it
+			
+		p(x_i^t) = sum_j {p(x_j^t-1) * p(x_i|x_j)}
+		
+	"observation model"
+	sense
+		for each cell:
+			given the current observation:
+				if obs = cell_obs
+					multiply p_cell with 0.6
+				else
+					multiply by 0.2
+			normalize 
+			
+			
+		p(x|z) = p(z|x)*p(x) / p(z)
+			- p(xi|z) = posterior
+			- p(xi) = prior
+			- p(z|xi) = 0.6 or 0.2
+			- p(z) = normalization term, so that sum is 1
+
+
+3. Markov Localization
+	only localization (map=const), not SLAM !
+	Markov = only depends on state from t-1
+	
+	
+
+
+##############
+
+
+Initialization 
+	include <random>
+	std::normal_distribution
+
+	// TODO: Set standard deviations for x, y, and theta
+	std_x = 2;
+	std_y = 2;
+	std_theta = 0.05; 
+	
+
+
+struct pos2D
+	float x
+	float y
+	float theta
+
+
+class ParticleFilter:
+	void init(num_particles)
+		pos_x = normal_dist(x, x_sigma)
+		...
+		for x in pos_x:
+			particle
+	
+	void move(yawrate, yawrate_sigma, velocity, velocity_sigma)
+		for particle in particles:
+			particle.move(...)
+	
+	void sense(map, lidar, lidar_sigma)
+		for particle in particles:
+			particle.sense(...)
+		normalize_weights() # so that sum_weights = 0
+		
+	void resample()
+		particles_resampled[N];
+		cumsum[num_particles] = ... 
+		sum = sum(cumsum)
+		while(n < num_particles):
+			index_random = random()
+			index_particle = ... 
+			particles_resampled[n] = particles[index_particle]
+		particles = particles_resampled;
+		normalize_weights() # so that sum_weights = 0
+		
+	std::pair<distance,delta_theta> calc_error_weighted(Pos2d_true)
+		distance_tot = 0
+		delta_theta_tot = 0
+		for particle : particles
+			distance, delta_theta = particle.calc_error()
+			distance_tot += particle.weight * distance
+			delta_theta_tot += particle.weight * delta_theta
+		assert (sum(particles.weight)==1) // we don't need to normalize
+		return distance_tot, delta_theta_tot
+	
+	std::pair<distance,delta_theta> calc_error_best_particle()
+		index_best = argmax(particles.weight)
+		return partices[index_best].calc_error()
+		
+	
+	private:
+		particles[num_particles]
+		void normalize_weights()
+
+	
+class Particle:
+	Particle(weight, Pos2d)
+	Particle(Particle)
+
+	void move(yawrate, yawrate_sigma, velocity, velocity_sigma)
+		x = ...
+		y = ...
+		alpha = ...
+	
+	void update(landmarks_mu, landmarks_sigma, measurements = x)
+		transform measurements_in_VCS to measurements_in_WCS (affine)
+		float likelihood_measurement[num_measurements]
+		for each lidar_measurement
+			associate measurement with landmark
+			calc likelihood_measurement (using Gaussian pdf)
+			weight *= likelihood_measurement
+	
+	std::pair<float,float> calc_error(Pos2d_true):
+		distance = square(
+					(particle.Pos2d.x - Pos2d_true.x)^2 + 
+				   (particle.Pos2d.y - Pos2d_true.y)^2
+				   )
+		delta_theta = abs(particle.Pos2d.theat - Pos2d_true.theta)
+		return <distance, delta_theta>
+		
+	
+	private:
+		Pos2d pos;
+	
+	
+
+
+
+
+  
+  normal_distribution<double> dist_x(gps_x, std_x);

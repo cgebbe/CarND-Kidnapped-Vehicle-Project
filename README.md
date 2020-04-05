@@ -15,8 +15,8 @@ Estimate the 2D pose of a car given...
 
 Use a particle filter, see https://en.wikipedia.org/wiki/Particle_filter. It works by  ...
 
-- Initialize particles with random poses
-- Continuously update these particles
+- Initializing particles with random poses
+- Continuously updating these particles:
   - Move each particle according to odometry data (and add noise)
   - Updated each particle's likelihood given the sensed landmark positions
   - Resample particles, i.e. clone existing particles based on their likelihood. Thereby, likely particles will have lots of duplicates and unlikely particles will cease to exist
